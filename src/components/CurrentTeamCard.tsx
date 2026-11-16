@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import type { League } from '../leagues/types';
 import { divisionLabel, teamMap } from '../leagues';
 import { TeamBadge } from './TeamBadge';
+import { useT } from '../i18n/useT';
 
 interface Props {
   league: League;
@@ -13,9 +14,10 @@ interface Props {
 
 export function CurrentTeamCard({ league, teamId, placeholder, compact }: Props) {
   const team = teamId ? teamMap(league).get(teamId) : null;
+  const t = useT();
   return (
     <div className={`current ${compact ? 'current--compact' : ''}`}>
-      <span className="current__label">À placer</span>
+      <span className="current__label">{t.toPlace}</span>
       <AnimatePresence mode="popLayout">
         {team ? (
           <motion.div
@@ -30,7 +32,7 @@ export function CurrentTeamCard({ league, teamId, placeholder, compact }: Props)
             <div className="current__name">
               <small>{team.city}</small>
               <strong>{team.name}</strong>
-              <span className="current__div">Division {divisionLabel(league, team.division)}</span>
+              <span className="current__div">{t.division(divisionLabel(league, team.division))}</span>
             </div>
           </motion.div>
         ) : (

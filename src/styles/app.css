@@ -152,6 +152,12 @@ kbd {
   transition: transform 0.12s;
 }
 
+.icon-btn--lang {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+}
+
 .icon-btn:hover:not(:disabled) {
   transform: translateY(-0.1rem) rotate(-3deg);
 }

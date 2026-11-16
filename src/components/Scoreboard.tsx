@@ -1,7 +1,8 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { motion } from 'framer-motion';
 import type { League } from '../leagues/types';
-import { teamMap } from '../leagues';
+import { groupShort, teamMap } from '../leagues';
+import { useT } from '../i18n/useT';
 import { boardKey, playerRanking } from '../engine/game';
 import type { GameConfig, GameProgress } from '../engine/types';
 import { TeamBadge } from './TeamBadge';
@@ -23,15 +24,16 @@ export function Scoreboard({ config, league, progress, activePlayerId, groupId }
   const group = league.groups.find((g) => g.id === view)!;
   const size = group.teamIds.length;
   const many = config.players.length > 3;
+  const t = useT();
 
   return (
     <aside className="scoreboard card">
       <div className="scoreboard__head">
-        <h3>Classements</h3>
+        <h3>{t.standings}</h3>
         <div className="tabs tabs--sm">
           {league.groups.map((g) => (
             <button key={g.id} className={g.id === view ? 'is-on' : ''} onClick={() => setView(g.id)}>
-              {g.short}
+              {groupShort(league, g.id)}
             </button>
           ))}
         </div>

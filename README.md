@@ -1,6 +1,6 @@
 # Pronos de saison
 
-Outil web pour pronostiquer le classement d'une saison à plusieurs, pensé pour le partage d'écran / stream. V1 : NBA (Conférence Est puis Ouest).
+Outil web pour pronostiquer le classement d'une saison à plusieurs, pensé pour le partage d'écran / stream. V1 : NBA (Conférence Est puis Ouest). Interface en français ou en anglais (bouton FR/EN en haut à droite, touche L) ; les textes sont dans `src/i18n/dict.ts`.
 
 ## Lancer
 
@@ -41,6 +41,7 @@ Sur la carte NBA, bouton **🏆 Playoffs** :
 | ← → puis 0–3 | Playoffs : choisir le vainqueur puis ses défaites (4-0 … 4-3) ; Entrée sans score |
 | Espace | Révélation : ligne / tour suivant |
 | T | Thème clair / sombre |
+| L | Langue : français / anglais |
 
 ## Ajouter un sport
 

@@ -7,12 +7,14 @@ import { TeamBadge } from '../TeamBadge';
 import { useKeys } from './useKeys';
 import type { BoardProps } from './types';
 import { ordinal } from '../../utils/format';
+import { useT } from '../../i18n/useT';
 
 const COLS = 5;
 
 export function PositionBoard({ config, league, step, board, remaining }: BoardProps) {
   const act = useGame((s) => s.act);
   const map = teamMap(league);
+  const tt = useT();
   const pos = targetSlot(config, board.slots.length, step.item) + 1;
   const teams = remaining
     .map((id) => map.get(id)!)
@@ -42,9 +44,9 @@ export function PositionBoard({ config, league, step, board, remaining }: BoardP
           animate={{ y: 0, opacity: 1, rotate: 0 }}
           exit={{ y: 30, opacity: 0 }}
         >
-          Qui termine <span className="question__pos">{ordinal(pos)}</span>
+          {tt.whoFinishes} <span className="question__pos">{ordinal(pos)}</span>
           <br />
-          <small>de la {groupLabel(league, step.groupId)} ?</small>
+          <small>{tt.inGroup(groupLabel(league, step.groupId))}</small>
         </motion.h2>
       </AnimatePresence>
       <div className="teamgrid" style={{ gridTemplateColumns: `repeat(${COLS}, 1fr)` }}>
@@ -72,7 +74,7 @@ export function PositionBoard({ config, league, step, board, remaining }: BoardP
           ))}
         </AnimatePresence>
       </div>
-      <p className="hint">Clique sur l'équipe · flèches puis Entrée</p>
+      <p className="hint">{tt.posHint}</p>
     </div>
   );
 }

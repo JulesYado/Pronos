@@ -1,17 +1,9 @@
-export const ordinal = (n: number) => (n === 1 ? '1er' : `${n}e`);
+import { tr } from '../i18n/current';
+import type { MethodId } from '../engine/types';
 
-export const METHOD_LABELS = {
-  tier: 'Tier list',
-  relative: 'Classement relatif',
-  position: 'Par position',
-  team: 'Par équipe',
-} as const;
+export const ordinal = (n: number) => tr().ordinal(n);
 
-export const ORDER_LABELS = {
-  random: 'Aléatoire',
-  alpha: 'Alphabétique',
-  pick: 'Choix libre',
-} as const;
+export const methodLabel = (m: MethodId) => tr().methods[m].title;
 
 export function initials(name: string): string {
   return name

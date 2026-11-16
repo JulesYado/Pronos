@@ -10,6 +10,7 @@ import { Reveal } from './screens/Reveal';
 import { PlayoffSetup } from './screens/PlayoffSetup';
 import { PlayoffGame } from './screens/PlayoffGame';
 import { PlayoffReveal } from './screens/PlayoffReveal';
+import { useT } from './i18n/useT';
 
 export default function App() {
   const screen = useGame((s) => s.screen);
@@ -18,9 +19,15 @@ export default function App() {
   const playoffGame = useGame((s) => s.config?.mode === 'playoffs');
   const playoffDraft = useGame((s) => s.draft.mode === 'playoffs');
 
+  const t = useT();
+
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
+
+  useEffect(() => {
+    document.title = `${t.heroTop} ${t.heroSub}`;
+  }, [t]);
 
   // Raccourcis globaux.
   useEffect(() => {
@@ -37,6 +44,7 @@ export default function App() {
       }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === 't' || e.key === 'T') s.toggleTheme();
+      else if (e.key === 'l' || e.key === 'L') s.toggleLang();
     };
     window.addEventListener('keydown', on);
     return () => window.removeEventListener('keydown', on);

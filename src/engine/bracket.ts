@@ -20,14 +20,6 @@ export interface SeriesDef {
 
 export type PicksMap = Record<string, SeriesPick>;
 
-export const ROUND_LABELS: Record<RoundId, string> = {
-  pi: 'Play-in',
-  r1: 'Premier tour',
-  r2: 'Demi-finales de conférence',
-  cf: 'Finales de conférence',
-  f: 'Finales',
-};
-
 export const ROUND_ORDER: RoundId[] = ['pi', 'r1', 'r2', 'cf', 'f'];
 
 export const MVP_STEP = 'mvp';

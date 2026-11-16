@@ -7,12 +7,14 @@ import { CurrentTeamCard } from '../CurrentTeamCard';
 import { TeamBadge } from '../TeamBadge';
 import { useKeys } from './useKeys';
 import type { BoardProps } from './types';
+import { useT } from '../../i18n/useT';
 
 export function TierBoard({ config, league, step, board, team }: BoardProps) {
   const act = useGame((s) => s.act);
   const editTiers = useGame((s) => s.editTiers);
   const key = boardKey(step.playerId, step.groupId);
   const map = teamMap(league);
+  const tt = useT();
   const [selected, setSelected] = useState<string | null>(null);
   const [local, setLocal] = useState(board.tiers);
   const localRef = useRef(local);
@@ -55,11 +57,11 @@ export function TierBoard({ config, league, step, board, team }: BoardProps) {
   return (
     <div className="tierboard">
       <div className="tierboard__top">
-        <CurrentTeamCard league={league} teamId={team} compact placeholder="Choisis une équipe dans la liste" />
+        <CurrentTeamCard league={league} teamId={team} compact placeholder={tt.pickFromList} />
         <p className="hint">
           {selected
-            ? `Déplacer ${map.get(selected)?.name} : clique sur un tier (Échap pour annuler)`
-            : 'Clique sur un tier ou tape son numéro · glisse les équipes pour les ordonner · clique une équipe pour la changer de tier'}
+            ? tt.tierMove(map.get(selected)?.name ?? '')
+            : tt.tierHint}
         </p>
       </div>
       <div className="tiers">

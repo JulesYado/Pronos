@@ -13,7 +13,8 @@ import { RelativeBoard } from '../components/methods/RelativeBoard';
 import { PositionBoard } from '../components/methods/PositionBoard';
 import { TeamBoard } from '../components/methods/TeamBoard';
 import type { BoardProps } from '../components/methods/types';
-import { initials, METHOD_LABELS } from '../utils/format';
+import { initials, methodLabel } from '../utils/format';
+import { useT } from '../i18n/useT';
 
 const BOARDS = { tier: TierBoard, relative: RelativeBoard, position: PositionBoard, team: TeamBoard };
 
@@ -23,6 +24,7 @@ export function Game() {
   const act = useGame((s) => s.act);
   const setScreen = useGame((s) => s.setScreen);
   const league = getLeague(config.leagueId);
+  const t = useT();
   const step = currentStep(config, league, progress);
   const steps = getSteps(config, league);
 
@@ -38,7 +40,7 @@ export function Game() {
     const player = step ? config.players[step.playerIndex] : null;
     if (!p) {
       if (progress.cursor === 0 && step && player) {
-        setBanner({ id: Date.now(), kicker: groupLabel(league, step.groupId), title: config.turnMode === 'round' ? 'Que le jeu commence !' : `À toi, ${player.name} !`, color: player.color });
+        setBanner({ id: Date.now(), kicker: groupLabel(league, step.groupId), title: config.turnMode === 'round' ? t.letsGo : t.yourTurn(player.name), color: player.color });
       }
       return;
     }
@@ -49,9 +51,9 @@ export function Game() {
     }
     if (step.groupId !== p.groupId) {
       setConfetti((c) => c + 1);
-      setBanner({ id: Date.now(), kicker: `${groupLabel(league, p.groupId!)} terminée !`, title: `Place à la ${groupLabel(league, step.groupId)}`, sub: config.turnMode === 'sequential' ? `${player!.name} commence` : undefined });
+      setBanner({ id: Date.now(), kicker: t.groupDone(groupLabel(league, p.groupId!)), title: t.nextGroup(groupLabel(league, step.groupId)), sub: config.turnMode === 'sequential' ? t.starts(player!.name) : undefined });
     } else if (config.turnMode === 'sequential' && step.playerId !== p.playerId && player) {
-      setBanner({ id: Date.now(), kicker: groupLabel(league, step.groupId), title: `À toi, ${player.name} !`, color: player.color });
+      setBanner({ id: Date.now(), kicker: groupLabel(league, step.groupId), title: t.yourTurn(player.name), color: player.color });
     }
   }, [progress.cursor]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -93,9 +95,9 @@ export function Game() {
               )}
             </AnimatePresence>
             <div className="turn__info">
-              <strong>{done ? 'Pronos terminés !' : groupLabel(league, groupId)}</strong>
+              <strong>{done ? t.picksDone : groupLabel(league, groupId)}</strong>
               <span>
-                {METHOD_LABELS[config.method]} · {done ? `${size}/${size}` : `${placed}/${size}`}
+                {methodLabel(config.method)} · {done ? `${size}/${size}` : `${placed}/${size}`}
               </span>
               <div className="progress">
                 <motion.div className="progress__bar" animate={{ width: `${pct}%` }} />
@@ -112,10 +114,10 @@ export function Game() {
           ) : (
             <motion.div className="finished" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring' }}>
               <span className="finished__emoji">🏆</span>
-              <h2>Tous les pronos sont faits !</h2>
-              <p className="lead">Prêts pour la grande révélation ?</p>
+              <h2>{t.allDoneTitle}</h2>
+              <p className="lead">{t.allDoneLead}</p>
               <button className="btn btn--primary btn--big" onClick={() => setScreen('reveal')}>
-                Révéler les classements ✨
+                {t.revealRankings}
               </button>
             </motion.div>
           )}

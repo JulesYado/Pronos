@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { AnimatePresence, motion, Reorder } from 'framer-motion';
-import { getLeague, teamMap } from '../leagues';
+import { getLeague, groupLabel, teamMap } from '../leagues';
+import { useT } from '../i18n/useT';
 import { boardKey, playerRanking } from '../engine/game';
 import { consensus } from '../engine/consensus';
 import { exportGame, useGame } from '../store/useGameStore';
@@ -19,6 +20,7 @@ export function Reveal() {
   const setScreen = useGame((s) => s.setScreen);
   const league = getLeague(config.leagueId);
   const map = teamMap(league);
+  const t = useT();
   const [groupId, setGroupId] = useState(league.groups[0].id);
   const size = league.groups.find((g) => g.id === groupId)!.teamIds.length;
   const [revealed, setRevealed] = useState<Record<string, number>>({});
@@ -67,15 +69,15 @@ export function Reveal() {
             <div className="tabs">
               {league.groups.map((g) => (
                 <button key={g.id} className={g.id === groupId ? 'is-on' : ''} onClick={() => setGroupId(g.id)}>
-                  {g.label}
+                  {groupLabel(league, g.id)}
                 </button>
               ))}
             </div>
             <button className="btn btn--primary" onClick={next} disabled={full}>
-              Révéler ({shown}/{size}) <kbd>Espace</kbd>
+              {t.revealCount(shown, size)} <kbd>{t.space}</kbd>
             </button>
             <button className="btn" onClick={all} disabled={full}>
-              Tout révéler
+              {t.revealAll}
             </button>
           </div>
         }
@@ -88,18 +90,18 @@ export function Reveal() {
               <div key={p.id} className="rv-head" style={{ '--pc': p.color } as CSSProperties}>
                 <span className="avatar">{initials(p.name)}</span>
                 <span className="rv-head__name">{p.name}</span>
-                <button className="icon-btn icon-btn--sm" title="Corriger ce classement" onClick={() => setEditing(p)}>
+                <button className="icon-btn icon-btn--sm" title={t.editRanking} onClick={() => setEditing(p)}>
                   ✏️
                 </button>
               </div>
             ))}
-            {hasPlayers && <div className="rv-head rv-head--cons">🤝 Consensus</div>}
+            {hasPlayers && <div className="rv-head rv-head--cons">{t.consensus}</div>}
             {Array.from({ length: size }, (_, row) => renderRow(row))}
           </div>
         </div>
         {hasPlayers && (
           <aside className="debates card">
-            <h3>🔥 Plus gros désaccords</h3>
+            <h3>{t.debatesTitle}</h3>
             <AnimatePresence>
               {full ? (
                 debates.map((d, i) => {
@@ -118,12 +120,12 @@ export function Reveal() {
                   );
                 })
               ) : (
-                <p className="muted">Révèle tout le classement pour voir les débats…</p>
+                <p className="muted">{t.revealForDebates}</p>
               )}
             </AnimatePresence>
             <div className="debates__export">
               <button className="btn btn--sm" onClick={() => gridRef.current && downloadPNG(gridRef.current, `pronos-${groupId}-${stamp()}.png`)}>
-                🖼️ Exporter en PNG
+                {t.exportPng}
               </button>
               <button
                 className="btn btn--sm"
@@ -132,10 +134,10 @@ export function Reveal() {
                   if (g) downloadJSON(g, `pronos-${config.leagueId}-${stamp()}.json`);
                 }}
               >
-                💾 Exporter en JSON
+                {t.exportJson}
               </button>
               <button className="btn btn--sm" onClick={() => setScreen('game')}>
-                ◀ Retour au jeu
+                {t.backToGame}
               </button>
             </div>
           </aside>
@@ -143,7 +145,7 @@ export function Reveal() {
         {!hasPlayers && (
           <div className="debates__export debates__export--solo">
             <button className="btn btn--sm" onClick={() => gridRef.current && downloadPNG(gridRef.current, `pronos-${groupId}-${stamp()}.png`)}>
-              🖼️ Exporter en PNG
+              {t.exportPng}
             </button>
           </div>
         )}
@@ -212,6 +214,7 @@ export function Reveal() {
 function EditModal({ player, list, onClose, onSave }: { player: Player; list: string[]; onClose: () => void; onSave: (l: string[]) => void }) {
   const config = useGame((s) => s.config)!;
   const map = teamMap(getLeague(config.leagueId));
+  const t = useT();
   const [items, setItems] = useState(list);
   useEffect(() => {
     const on = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -227,8 +230,8 @@ function EditModal({ player, list, onClose, onSave }: { player: Player; list: st
         exit={{ y: 60, scale: 0.9 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h3>Corriger le classement de {player.name}</h3>
-        <p className="muted">Glisse les équipes pour les réordonner.</p>
+        <h3>{t.editRankingTitle(player.name)}</h3>
+        <p className="muted">{t.dragTeams}</p>
         <Reorder.Group axis="y" values={items} onReorder={setItems} className="edit-list">
           {items.map((id, i) => (
             <Reorder.Item key={id} value={id} className="edit-row">
@@ -240,10 +243,10 @@ function EditModal({ player, list, onClose, onSave }: { player: Player; list: st
         </Reorder.Group>
         <div className="row row--end">
           <button className="btn" onClick={onClose}>
-            Annuler
+            {t.cancel}
           </button>
           <button className="btn btn--primary" onClick={() => onSave(items)}>
-            Enregistrer
+            {t.save}
           </button>
         </div>
       </motion.div>

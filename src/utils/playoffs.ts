@@ -1,23 +1,30 @@
 import type { League } from '../leagues/types';
-import { ROUND_LABELS, type SeriesDef } from '../engine/bracket';
+import type { RoundId, SeriesDef } from '../engine/bracket';
+import { groupShort } from '../leagues';
+import { tr } from '../i18n/current';
 
-const R1: Record<string, string> = { '1': '1 contre 8', '4': '4 contre 5', '3': '3 contre 6', '2': '2 contre 7' };
-const PI: Record<string, string> = { a: '7e contre 8e', b: '9e contre 10e', c: 'Pour la 8e place' };
+/** Libellé d'un tour (« Premier tour », « Finales NBA »…). */
+export function roundName(league: League, round: RoundId): string {
+  const t = tr();
+  return round === 'f' ? t.finals[league.id] ?? t.rounds.f : t.rounds[round];
+}
 
-/** Libellé du tour (« Premier tour », « Finales NBA »…). */
 export function roundLabel(league: League, def: SeriesDef): string {
-  return def.round === 'f' ? league.playoffs?.finalsLabel ?? ROUND_LABELS.f : ROUND_LABELS[def.round];
+  return roundName(league, def.round);
 }
 
 /** Petit libellé de la série dans son tour. */
 export function seriesSub(league: League, def: SeriesDef): string {
-  const group = league.groups.find((g) => g.id === def.groupId)?.short ?? '';
+  const t = tr();
+  const group = def.groupId ? groupShort(league, def.groupId) : '';
   const tail = def.id.split('-').pop()!;
+  const R1: Record<string, [number, number]> = { '1': [1, 8], '4': [4, 5], '3': [3, 6], '2': [2, 7] };
+  const PI: Record<string, string> = { a: t.piA, b: t.piB, c: t.piC };
   if (def.round === 'pi') return `${group} · ${PI[tail]}`;
-  if (def.round === 'r1') return `${group} · ${R1[tail]}`;
-  if (def.round === 'r2') return `${group} · ${tail === 'a' ? 'haut de tableau' : 'bas de tableau'}`;
+  if (def.round === 'r1') return `${group} · ${t.versus(...R1[tail])}`;
+  if (def.round === 'r2') return `${group} · ${tail === 'a' ? t.topHalf : t.bottomHalf}`;
   if (def.round === 'cf') return group;
-  return 'Ouest contre Est';
+  return t.westVsEast;
 }
 
 export const scoreLabel = (lost?: number | null) => (lost === undefined || lost === null ? '' : `4-${lost}`);

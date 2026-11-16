@@ -7,10 +7,12 @@ import { TeamBadge } from '../TeamBadge';
 import { useKeys } from './useKeys';
 import type { BoardProps } from './types';
 import { ordinal } from '../../utils/format';
+import { useT } from '../../i18n/useT';
 
 export function TeamBoard({ league, board, team }: BoardProps) {
   const act = useGame((s) => s.act);
   const map = teamMap(league);
+  const t = useT();
   const size = board.slots.length;
   const [buffer, setBuffer] = useState('');
   const timer = useRef<ReturnType<typeof setTimeout>>();
@@ -44,8 +46,8 @@ export function TeamBoard({ league, board, team }: BoardProps) {
   return (
     <div className="teamboard">
       <div className="teamboard__side">
-        <CurrentTeamCard league={league} teamId={team} placeholder="Choisis une équipe dans la liste" />
-        <p className="hint">Clique sur une position libre ou tape son numéro</p>
+        <CurrentTeamCard league={league} teamId={team} placeholder={t.pickFromList} />
+        <p className="hint">{t.teamHint}</p>
         {buffer && (
           <motion.div className="buffer" initial={{ scale: 0.5 }} animate={{ scale: 1 }}>
             {buffer}…

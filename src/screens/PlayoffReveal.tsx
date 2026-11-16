@@ -13,7 +13,8 @@ import { DuelCard } from '../components/playoffs/DuelCard';
 import { useKeys } from '../components/methods/useKeys';
 import { downloadJSON, downloadPNG, stamp } from '../utils/export';
 import { initials } from '../utils/format';
-import { roundLabel, scoreLabel, seriesSub } from '../utils/playoffs';
+import { roundLabel, roundName, scoreLabel, seriesSub } from '../utils/playoffs';
+import { useT } from '../i18n/useT';
 import type { Player } from '../engine/types';
 
 type View = 'table' | 'consensus' | string;
@@ -25,6 +26,7 @@ export function PlayoffReveal() {
   const setBracket = useGame((s) => s.setBracket);
   const league = getLeague(config.leagueId);
   const map = teamMap(league);
+  const t = useT();
   const tpl = templateFor(config, league);
   const rounds = ROUND_ORDER.filter((r) => tpl.some((s) => s.round === r));
   const [shown, setShown] = useState(0);
@@ -66,10 +68,10 @@ export function PlayoffReveal() {
         center={
           <div className="reveal__controls">
             <button className="btn btn--primary" onClick={next} disabled={full}>
-              {full ? 'Tout est révélé !' : `Révéler : ${rounds[shown] === 'f' ? league.playoffs?.finalsLabel ?? 'Finales' : roundLabel(league, tpl.find((s) => s.round === rounds[shown])!)}`} <kbd>Espace</kbd>
+              {full ? t.allRevealed : t.revealRound(roundName(league, rounds[shown]))} <kbd>{t.space}</kbd>
             </button>
             <button className="btn" onClick={() => { setShown(rounds.length); setConfetti((c) => c + 1); }} disabled={full}>
-              Tout révéler
+              {t.revealAll}
             </button>
           </div>
         }
@@ -77,8 +79,8 @@ export function PlayoffReveal() {
       <main className="reveal__main">
         <div className="reveal__grid card prv" ref={gridRef}>
           <div className="tabs prv__tabs">
-            <button className={view === 'table' ? 'is-on' : ''} onClick={() => setView('table')}>📋 Séries</button>
-            {multi && <button className={view === 'consensus' ? 'is-on' : ''} onClick={() => setView('consensus')}>🤝 Consensus</button>}
+            <button className={view === 'table' ? 'is-on' : ''} onClick={() => setView('table')}>{t.tabSeries}</button>
+            {multi && <button className={view === 'consensus' ? 'is-on' : ''} onClick={() => setView('consensus')}>{t.consensus}</button>}
             {config.players.map((p) => (
               <button key={p.id} className={view === p.id ? 'is-on' : ''} onClick={() => setView(p.id)} style={{ '--pc': p.color } as CSSProperties}>
                 {p.name}
@@ -87,18 +89,18 @@ export function PlayoffReveal() {
           </div>
           {view === 'table' ? (
             <div className="rv-table prv-table" style={{ '--cols': config.players.length + (multi ? 1 : 0) } as CSSProperties}>
-              <div className="rv-corner">Série</div>
+              <div className="rv-corner">{t.series}</div>
               {config.players.map((p) => (
                 <div key={p.id} className="rv-head" style={{ '--pc': p.color } as CSSProperties}>
                   <span className="avatar">{initials(p.name)}</span>
                   <span className="rv-head__name">{p.name}</span>
-                  <button className="icon-btn icon-btn--sm" title="Corriger ce tableau" onClick={() => setEditing(p)}>✏️</button>
+                  <button className="icon-btn icon-btn--sm" title={t.editBracket} onClick={() => setEditing(p)}>✏️</button>
                 </div>
               ))}
-              {multi && <div className="rv-head rv-head--cons">🤝 Consensus</div>}
+              {multi && <div className="rv-head rv-head--cons">{t.consensus}</div>}
               {rounds.map((r) => (
                 <Fragment key={r}>
-                  <div className="prv-round">{r === 'f' ? league.playoffs?.finalsLabel ?? 'Finales' : roundLabel(league, tpl.find((s) => s.round === r)!)}</div>
+                  <div className="prv-round">{roundName(league, r)}</div>
                   {tpl.filter((s) => s.round === r).map((def) => {
                     const on = visible.has(r);
                     const c = cons.find((x) => x.def.id === def.id)!;
@@ -150,7 +152,7 @@ export function PlayoffReveal() {
           )}
         </div>
         <aside className="debates card">
-          <h3>🏆 Champions</h3>
+          <h3>{t.champions}</h3>
           {config.players.map((p, j) => {
             const champ = full ? champion(all[j]) : null;
             return (
@@ -166,7 +168,7 @@ export function PlayoffReveal() {
                 )}
                 {champ && config.playoffs?.mvp && progress.mvp?.[p.id] && (
                   <motion.small className="champ-row__mvp" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: j * 0.15 + 0.3 }}>
-                    ⭐ MVP : {progress.mvp[p.id]}
+                    {t.mvpOf(progress.mvp[p.id])}
                   </motion.small>
                 )}
               </div>
@@ -174,7 +176,7 @@ export function PlayoffReveal() {
           })}
           {multi && (
             <>
-              <h3>🔥 Séries les plus disputées</h3>
+              <h3>{t.disputed}</h3>
               <AnimatePresence>
                 {full ? (
                   disputed.map((d, i) => (
@@ -193,14 +195,14 @@ export function PlayoffReveal() {
                     </motion.div>
                   ))
                 ) : (
-                  <p className="muted">Révèle tout le tableau pour voir les débats…</p>
+                  <p className="muted">{t.revealBracketForDebates}</p>
                 )}
               </AnimatePresence>
             </>
           )}
           <div className="debates__export">
             <button className="btn btn--sm" onClick={() => gridRef.current && downloadPNG(gridRef.current, `playoffs-${view}-${stamp()}.png`)}>
-              🖼️ Exporter en PNG
+              {t.exportPng}
             </button>
             <button
               className="btn btn--sm"
@@ -209,10 +211,10 @@ export function PlayoffReveal() {
                 if (g) downloadJSON(g, `playoffs-${config.leagueId}-${stamp()}.json`);
               }}
             >
-              💾 Exporter en JSON
+              {t.exportJson}
             </button>
             <button className="btn btn--sm" onClick={() => setScreen('game')}>
-              ◀ Retour au jeu
+              {t.backToGame}
             </button>
           </div>
         </aside>
@@ -240,6 +242,7 @@ function EditBracket({ player, initial, onClose, onSave }: { player: Player; ini
   const config = useGame((s) => s.config)!;
   const league = getLeague(config.leagueId);
   const tpl = templateFor(config, league);
+  const t = useT();
   const [picks, setPicks] = useState(initial);
   const complete = tpl.every((s) => picks[s.id]);
   useEffect(() => {
@@ -257,8 +260,8 @@ function EditBracket({ player, initial, onClose, onSave }: { player: Player; ini
         onClick={(e) => e.stopPropagation()}
         style={{ '--sel': player.color } as CSSProperties}
       >
-        <h3>Corriger le tableau de {player.name}</h3>
-        <p className="muted">Changer un vainqueur efface les séries suivantes devenues impossibles : il faudra les refaire.</p>
+        <h3>{t.editBracketTitle(player.name)}</h3>
+        <p className="muted">{t.editBracketHelp}</p>
         <div className="edit-duels">
           {tpl.map((def) => (
             <div key={def.id} className={`edit-duel ${picks[def.id] ? '' : 'is-missing'}`}>
@@ -280,10 +283,10 @@ function EditBracket({ player, initial, onClose, onSave }: { player: Player; ini
         </div>
         <div className="row row--end">
           <button className="btn" onClick={onClose}>
-            Annuler
+            {t.cancel}
           </button>
           <button className="btn btn--primary" disabled={!complete} onClick={() => onSave(picks)}>
-            Enregistrer
+            {t.save}
           </button>
         </div>
       </motion.div>

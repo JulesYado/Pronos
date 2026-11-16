@@ -2,6 +2,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { exportGame, useGame } from '../store/useGameStore';
 import { downloadJSON, readJSONFile, stamp } from '../utils/export';
+import { useT } from '../i18n/useT';
 
 interface Props {
   center?: ReactNode;
@@ -9,7 +10,8 @@ interface Props {
 }
 
 export function TopBar({ center, showUndo }: Props) {
-  const { theme, toggleTheme, undo, history, newGame, importGame, config, setScreen } = useGame();
+  const { theme, toggleTheme, lang, toggleLang, undo, history, newGame, importGame, config, setScreen } = useGame();
+  const t = useT();
   const [open, setOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -19,29 +21,32 @@ export function TopBar({ center, showUndo }: Props) {
       const err = importGame(await readJSONFile(f));
       if (err) alert(err);
     } catch {
-      alert('Fichier JSON invalide.');
+      alert(t.invalidJson);
     }
     setOpen(false);
   };
 
   return (
     <header className="topbar">
-      <button className="logo" onClick={() => setScreen('league')} title="Accueil">
+      <button className="logo" onClick={() => setScreen('league')} title={t.home}>
         <span className="logo__ball">🏀</span>
         <span className="logo__text">PRONOS</span>
       </button>
       <div className="topbar__center">{center}</div>
       <div className="topbar__actions">
         {showUndo && (
-          <button className="icon-btn" onClick={undo} disabled={!history.length} title="Annuler (Ctrl+Z)">
-            ↶<span className="icon-btn__label">Annuler</span>
+          <button className="icon-btn" onClick={undo} disabled={!history.length} title={t.undoTitle}>
+            ↶<span className="icon-btn__label">{t.undo}</span>
           </button>
         )}
-        <button className="icon-btn" onClick={toggleTheme} title="Thème clair/sombre (T)">
+        <button className="icon-btn icon-btn--lang" onClick={toggleLang} title={t.langTitle}>
+          {lang === 'fr' ? 'EN' : 'FR'}
+        </button>
+        <button className="icon-btn" onClick={toggleTheme} title={t.themeTitle}>
           {theme === 'light' ? '☾' : '☀'}
         </button>
         <div className="menu">
-          <button className="icon-btn" onClick={() => setOpen((o) => !o)} title="Menu">
+          <button className="icon-btn" onClick={() => setOpen((o) => !o)} title={t.menu}>
             ☰
           </button>
           <AnimatePresence>
@@ -60,19 +65,19 @@ export function TopBar({ center, showUndo }: Props) {
                       setOpen(false);
                     }}
                   >
-                    💾 Exporter la partie (JSON)
+                    {t.exportGameJson}
                   </button>
                 )}
-                <button onClick={() => fileRef.current?.click()}>📂 Importer une partie</button>
+                <button onClick={() => fileRef.current?.click()}>{t.importGame}</button>
                 <button
                   onClick={() => {
-                    if (!config || confirm('Abandonner la partie en cours ?')) newGame();
+                    if (!config || confirm(t.confirmAbandon)) newGame();
                     setOpen(false);
                   }}
                 >
-                  ✨ Nouvelle partie
+                  {t.newGame}
                 </button>
-                <p className="menu__hint">Raccourcis : Ctrl+Z annuler · T thème · M son</p>
+                <p className="menu__hint">{t.shortcutsHint}</p>
               </motion.div>
             )}
           </AnimatePresence>

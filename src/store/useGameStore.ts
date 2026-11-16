@@ -3,6 +3,8 @@ import { persist } from 'zustand/middleware';
 import { getLeague } from '../leagues';
 import { applyAction, initProgress, isDone, setBoardTiers, setOverride } from '../engine/game';
 import { defaultTiers } from '../engine/tiers';
+import { detectLang, dicts, type Lang } from '../i18n/dict';
+import { setCurrentLang, tr } from '../i18n/current';
 import { seedCount, setPlayerPicks, type PicksMap } from '../engine/bracket';
 import type { Action, GameConfig, GameMode, GameProgress, MethodId, OrderMode, Player, PositionStart, Tier, TurnMode } from '../engine/types';
 
@@ -41,6 +43,7 @@ interface State {
   progress: GameProgress | null;
   history: GameProgress[];
   theme: 'light' | 'dark';
+  lang: Lang;
 
   setScreen: (s: Screen) => void;
   chooseLeague: (id: string, mode?: GameMode) => void;
@@ -54,9 +57,13 @@ interface State {
   newGame: () => void;
   importGame: (data: unknown) => string | null;
   toggleTheme: () => void;
+  toggleLang: () => void;
 }
 
 const HISTORY_MAX = 200;
+
+// Langue par défaut (avant lecture de la sauvegarde) : celle du navigateur.
+setCurrentLang(detectLang());
 
 const initialDraft = (): Draft => ({
   mode: 'season',
@@ -87,6 +94,7 @@ export const useGame = create<State>()(
         progress: null,
         history: [],
         theme: 'light',
+        lang: detectLang(),
 
         setScreen: (screen) => set({ screen }),
         chooseLeague: (leagueId, mode = 'season') => set({ leagueId, draft: { ...get().draft, mode }, screen: 'players' }),
@@ -154,7 +162,7 @@ export const useGame = create<State>()(
 
         importGame: (data) => {
           const d = data as Partial<SavedGame> | null;
-          if (!d || d.app !== 'pronostic' || !d.config || !d.progress) return 'Fichier non reconnu.';
+          if (!d || d.app !== 'pronostic' || !d.config || !d.progress) return tr().unknownFile;
           try {
             const league = getLeague(d.config.leagueId);
             const done = isDone(d.config, league, d.progress);
@@ -172,6 +180,16 @@ export const useGame = create<State>()(
         },
 
         toggleTheme: () => set({ theme: get().theme === 'light' ? 'dark' : 'light' }),
+
+        toggleLang: () => {
+          const { lang, draft } = get();
+          const next: Lang = lang === 'fr' ? 'en' : 'fr';
+          setCurrentLang(next);
+          // Les catégories par défaut non modifiées suivent la langue.
+          const old = dicts[lang].defaultTiers;
+          const tiers = draft.tiers.map((t, i) => (t.id === `tier${i}` && t.name === old[i] ? { ...t, name: dicts[next].defaultTiers[i] } : t));
+          set({ lang: next, draft: { ...draft, tiers } });
+        },
       };
     },
     {
@@ -194,7 +212,11 @@ export const useGame = create<State>()(
         progress: s.progress,
         history: s.history.slice(-30),
         theme: s.theme,
+        lang: s.lang,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state?.lang) setCurrentLang(state.lang);
+      },
     },
   ),
 );

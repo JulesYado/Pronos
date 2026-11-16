@@ -6,10 +6,12 @@ import { CurrentTeamCard } from '../CurrentTeamCard';
 import { TeamBadge } from '../TeamBadge';
 import { useKeys } from './useKeys';
 import type { BoardProps } from './types';
+import { useT } from '../../i18n/useT';
 
 export function RelativeBoard({ league, board, team }: BoardProps) {
   const act = useGame((s) => s.act);
   const map = teamMap(league);
+  const t = useT();
   const list = board.list;
   const [slot, setSlot] = useState(Math.floor(list.length / 2));
 
@@ -45,31 +47,31 @@ export function RelativeBoard({ league, board, team }: BoardProps) {
       <AnimatePresence>
         {slot === i && current && (
           <motion.span className="slot__ghost" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
-            <TeamBadge team={current} size="xs" label="name" /> ici
+            <TeamBadge team={current} size="xs" label="name" /> {t.here}
           </motion.span>
         )}
       </AnimatePresence>
-      {list.length === 0 && !(slot === i && current) && <span>Place la première équipe</span>}
+      {list.length === 0 && !(slot === i && current) && <span>{t.placeFirst}</span>}
     </button>
   );
 
   return (
     <div className="relboard">
       <div className="relboard__side">
-        <CurrentTeamCard league={league} teamId={team} placeholder="Choisis une équipe dans la liste" />
+        <CurrentTeamCard league={league} teamId={team} placeholder={t.pickFromList} />
         {current && list.length > 0 && (
           <motion.div className="relboard__compare card" key={`${slot}-${team}`} initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
             <div>
-              <span className="muted">En dessous de</span>
-              <strong>{above ? `${above.city} ${above.name}` : '— personne (1er) —'}</strong>
+              <span className="muted">{t.below}</span>
+              <strong>{above ? `${above.city} ${above.name}` : t.nobodyFirst}</strong>
             </div>
             <div>
-              <span className="muted">Au-dessus de</span>
-              <strong>{below ? `${below.city} ${below.name}` : '— personne (dernier) —'}</strong>
+              <span className="muted">{t.above}</span>
+              <strong>{below ? `${below.city} ${below.name}` : t.nobodyLast}</strong>
             </div>
           </motion.div>
         )}
-        <p className="hint">Clique entre deux équipes · ↑ ↓ puis Entrée</p>
+        <p className="hint">{t.relHint}</p>
       </div>
       <div className="rellist">
         {slotEl(0)}

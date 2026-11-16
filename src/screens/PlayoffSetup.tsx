@@ -3,6 +3,7 @@ import { getLeague } from '../leagues';
 import { TopBar } from '../components/TopBar';
 import { SeedEditor } from '../components/playoffs/SeedEditor';
 import { seedCount } from '../engine/bracket';
+import { useT } from '../i18n/useT';
 
 function Toggle({ title, value, on, off, onChange }: { title: string; value: boolean; on: [string, string]; off: [string, string]; onChange: (v: boolean) => void }) {
   return (
@@ -25,11 +26,12 @@ function Toggle({ title, value, on, off, onChange }: { title: string; value: boo
 export function PlayoffSetup() {
   const { draft, updateDraft, setScreen, startGame, config, leagueId } = useGame();
   const league = getLeague(leagueId);
+  const t = useT();
   const count = seedCount(draft.playIn);
   const ready = league.groups.every((g) => (draft.seeds[g.id] ?? []).length >= count);
 
   const start = () => {
-    if (config && !confirm('Une partie est déjà en cours. La remplacer ?')) return;
+    if (config && !confirm(t.confirmReplace)) return;
     startGame();
   };
 
@@ -37,48 +39,46 @@ export function PlayoffSetup() {
     <div className="screen screen--setup">
       <TopBar />
       <main className="setup setup--wide">
-        <h2 className="step-title">3. Les playoffs 🏆</h2>
+        <h2 className="step-title">{t.playoffsTitle}</h2>
         <div className="options options--4">
           <Toggle
-            title="Play-in"
+            title={t.playIn}
             value={draft.playIn}
-            on={['🎟️ Oui', '7e à 10e : matchs de barrage']}
-            off={['⏭️ Non', 'Direct au 1er tour']}
+            on={t.playInOn}
+            off={t.playInOff}
             onChange={(playIn) => updateDraft({ playIn })}
           />
           <Toggle
-            title="Score des séries"
+            title={t.seriesScore}
             value={draft.withScore}
-            on={['🔢 Oui', 'Vainqueur + 4-0 … 4-3']}
-            off={['✅ Non', 'Vainqueur seulement']}
+            on={t.scoreOn}
+            off={t.scoreOff}
             onChange={(withScore) => updateDraft({ withScore })}
           />
           <Toggle
-            title="MVP des Finales"
+            title={t.finalsMvp}
             value={draft.mvp}
-            on={['⭐ Oui', 'Chacun nomme son MVP']}
-            off={['🚫 Non', 'Pas de MVP']}
+            on={t.mvpOn}
+            off={t.mvpOff}
             onChange={(mvp) => updateDraft({ mvp })}
           />
           <section className="option card">
-            <h3>Ordre de passage</h3>
+            <h3>{t.turnOrder}</h3>
             <div className="seg">
               <button className={draft.turnMode === 'round' ? 'is-on' : ''} onClick={() => updateDraft({ turnMode: 'round' })}>
-                🔁 Tour par tour
-                <small>Chaque série passe par tous</small>
+                {t.round}
+                <small>{t.roundDescP}</small>
               </button>
               <button className={draft.turnMode === 'sequential' ? 'is-on' : ''} onClick={() => updateDraft({ turnMode: 'sequential' })}>
-                👤 Joueur par joueur
-                <small>Chacun fait tout son tableau</small>
+                {t.sequential}
+                <small>{t.sequentialDescP}</small>
               </button>
             </div>
           </section>
         </div>
 
-        <h2 className="step-title">Têtes de série</h2>
-        <p className="muted">
-          Clique sur les équipes dans l'ordre (1re tête de série d'abord), glisse pour corriger. {draft.playIn ? '10 équipes par conférence, dont 4 au play-in.' : '8 équipes par conférence.'}
-        </p>
+        <h2 className="step-title">{t.seedsTitle}</h2>
+        <p className="muted">{t.seedsHelp(draft.playIn)}</p>
         <div className="seeds-grid">
           {league.groups.map((g) => (
             <SeedEditor
@@ -95,11 +95,11 @@ export function PlayoffSetup() {
 
         <div className="setup__nav">
           <button className="btn" onClick={() => setScreen('players')}>
-            ◀ Retour
+            {t.back}
           </button>
-          <span className="muted">{ready ? `${draft.players.length} joueur${draft.players.length > 1 ? 's' : ''} · prêt !` : 'Complète les têtes de série'}</span>
+          <span className="muted">{ready ? `${t.players(draft.players.length)} · ${t.ready}` : t.completeSeeds}</span>
           <button className="btn btn--primary btn--big" onClick={start} disabled={!ready}>
-            C'est parti ! 🚀
+            {t.start}
           </button>
         </div>
       </main>

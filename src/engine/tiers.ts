@@ -1,4 +1,5 @@
 import type { Tier } from './types';
+import { tr } from '../i18n/current';
 
 /** Dégradé pastel du rouge (haut) vers le bleu (bas). */
 export function tierGradient(count: number): string[] {
@@ -17,9 +18,9 @@ export function recolor(tiers: Tier[]): Tier[] {
 let n = 0;
 export const newTierId = () => `t${Date.now().toString(36)}${(n++).toString(36)}`;
 
-export function defaultTiers(): Tier[] {
+export function defaultTiers(names: string[] = tr().defaultTiers): Tier[] {
   return recolor(
-    ['Favori au titre', 'Haut de tableau', 'Playoffs', 'Play-in', 'Loterie'].map((name, i) => ({
+    names.map((name, i) => ({
       id: `tier${i}`,
       name,
       color: '',

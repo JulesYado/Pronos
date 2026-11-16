@@ -1,6 +1,7 @@
 import { AnimatePresence, motion, Reorder } from 'framer-motion';
 import type { League, RankingGroup } from '../../leagues/types';
-import { teamMap } from '../../leagues';
+import { groupLabel, teamMap } from '../../leagues';
+import { useT } from '../../i18n/useT';
 import { TeamBadge } from '../TeamBadge';
 
 interface Props {
@@ -15,6 +16,7 @@ interface Props {
 /** Saisie des têtes de série d'une conférence : clic sur une équipe = place suivante, glisser pour réordonner. */
 export function SeedEditor({ league, group, seeds, count, playIn, onChange }: Props) {
   const map = teamMap(league);
+  const t = useT();
   const pool = group.teamIds
     .filter((id) => !seeds.includes(id))
     .sort((a, b) => map.get(a)!.city.localeCompare(map.get(b)!.city, 'fr'));
@@ -23,13 +25,13 @@ export function SeedEditor({ league, group, seeds, count, playIn, onChange }: Pr
   return (
     <div className="seeds">
       <div className="seeds__head">
-        <h3>{group.label}</h3>
+        <h3>{groupLabel(league, group.id)}</h3>
         <span className={`seeds__count ${full ? 'is-ok' : ''}`}>
           {Math.min(seeds.length, count)}/{count}
         </span>
         {seeds.length > 0 && (
           <button className="btn btn--sm" onClick={() => onChange([])}>
-            Vider
+            {t.clear}
           </button>
         )}
       </div>
@@ -40,9 +42,9 @@ export function SeedEditor({ league, group, seeds, count, playIn, onChange }: Pr
             <Reorder.Item key={id} value={id} className={`seed-row ${zone}`} initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}>
               <span className="seed-row__num">{i + 1}</span>
               <TeamBadge team={map.get(id)!} size="xs" label="long" />
-              {zone === 'is-pi' && <span className="seed-row__tag">play-in</span>}
-              {zone === 'is-unused' && <span className="seed-row__tag">non utilisé</span>}
-              <button className="icon-btn icon-btn--sm" title="Retirer" onClick={() => onChange(seeds.filter((x) => x !== id))}>
+              {zone === 'is-pi' && <span className="seed-row__tag">{t.playInTag}</span>}
+              {zone === 'is-unused' && <span className="seed-row__tag">{t.unused}</span>}
+              <button className="icon-btn icon-btn--sm" title={t.remove} onClick={() => onChange(seeds.filter((x) => x !== id))}>
                 ✕
               </button>
             </Reorder.Item>
@@ -51,7 +53,7 @@ export function SeedEditor({ league, group, seeds, count, playIn, onChange }: Pr
         {Array.from({ length: Math.max(0, count - seeds.length) }, (_, k) => (
           <li key={`empty-${k}`} className={`seed-row is-empty ${playIn && seeds.length + k >= 6 ? 'is-pi' : ''}`}>
             <span className="seed-row__num">{seeds.length + k + 1}</span>
-            <span className="muted">{k === 0 ? 'Clique une équipe ci-dessous' : '—'}</span>
+            <span className="muted">{k === 0 ? t.clickTeamBelow : '—'}</span>
           </li>
         ))}
       </Reorder.Group>

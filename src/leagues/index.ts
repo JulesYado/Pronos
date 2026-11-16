@@ -1,5 +1,6 @@
 import { nba } from './nba';
 import type { League, Team } from './types';
+import { tr } from '../i18n/current';
 
 export const leagues: Record<string, League> = { nba };
 
@@ -34,10 +35,19 @@ export function teamMap(league: League): Map<string, Team> {
   return m;
 }
 
+/** Libellé traduit d'un groupe (« Conférence Est » / « Eastern Conference »). */
 export function groupLabel(league: League, groupId: string): string {
-  return league.groups.find((g) => g.id === groupId)?.label ?? groupId;
+  return tr().groups[groupId]?.label ?? league.groups.find((g) => g.id === groupId)?.label ?? groupId;
+}
+
+export function groupShort(league: League, groupId: string): string {
+  return tr().groups[groupId]?.short ?? league.groups.find((g) => g.id === groupId)?.short ?? groupId;
+}
+
+export function sportLabel(id: string, fallback: string): string {
+  return tr().sports[id] ?? fallback;
 }
 
 export function divisionLabel(league: League, divisionId: string): string {
-  return league.divisions.find((d) => d.id === divisionId)?.label ?? divisionId;
+  return tr().divisions[divisionId] ?? league.divisions.find((d) => d.id === divisionId)?.label ?? divisionId;
 }

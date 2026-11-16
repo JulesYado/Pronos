@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { League } from '../leagues/types';
 import { teamMap } from '../leagues';
 import { TeamBadge } from './TeamBadge';
+import { useT } from '../i18n/useT';
 
 interface Props {
   league: League;
@@ -14,12 +15,13 @@ interface Props {
 /** Liste latérale des équipes restantes (mode « choix libre »). */
 export function TeamPicker({ league, teams, active, selected, onPick }: Props) {
   const map = teamMap(league);
+  const tt = useT();
   const sorted = teams
     .map((id) => map.get(id)!)
     .sort((a, b) => `${a.city} ${a.name}`.localeCompare(`${b.city} ${b.name}`, 'fr'));
   return (
     <aside className={`picker card ${active ? 'picker--active' : ''}`}>
-      <h3 className="picker__title">{active ? '👉 Choisis une équipe' : 'Équipes restantes'}</h3>
+      <h3 className="picker__title">{active ? tt.chooseTeam : tt.remainingTeams}</h3>
       <div className="picker__list">
         <AnimatePresence initial={false}>
           {sorted.map((t) => (

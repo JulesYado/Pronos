@@ -7,6 +7,7 @@ import type { GameConfig, SeriesPick } from '../../engine/types';
 import { TeamBadge } from '../TeamBadge';
 import { useKeys } from '../methods/useKeys';
 import { roundLabel, seriesSub } from '../../utils/playoffs';
+import { useT } from '../../i18n/useT';
 
 interface Props {
   config: GameConfig;
@@ -24,6 +25,7 @@ interface Props {
 /** Carte « duel » : les deux équipes face à face ; un clic = vainqueur (+ score). */
 export function DuelCard({ config, league, def, teams, onPick, value, noKeys, compact }: Props) {
   const map = teamMap(league);
+  const t = useT();
   const withScore = !!config.playoffs?.withScore && !def.single;
   const [focus, setFocus] = useState(0);
 
@@ -84,7 +86,7 @@ export function DuelCard({ config, league, def, teams, onPick, value, noKeys, co
                             whileHover={{ y: -3 }}
                             whileTap={{ scale: 0.9 }}
                             onClick={() => onPick({ winner: team.id, lost })}
-                            title={`${team.name} gagne 4-${lost}`}
+                            title={t.wins(team.name, lost)}
                           >
                             4-{lost}
                           </motion.button>
@@ -93,7 +95,7 @@ export function DuelCard({ config, league, def, teams, onPick, value, noKeys, co
                     )}
                   </>
                 ) : (
-                  <span className="duel__tbd">À déterminer</span>
+                  <span className="duel__tbd">{t.tbd}</span>
                 )}
               </motion.div>
             );
@@ -105,7 +107,7 @@ export function DuelCard({ config, league, def, teams, onPick, value, noKeys, co
       </div>
       {!compact && (
         <p className="hint">
-          {withScore ? 'Clique sur le score sous le vainqueur · ← → puis 0 à 3 (défaites du vainqueur)' : def.single ? 'Match unique : clique sur le vainqueur · ← → puis Entrée' : 'Clique sur le vainqueur · ← → puis Entrée'}
+          {withScore ? t.hintScore : def.single ? t.hintSingle : t.hintWinner}
         </p>
       )}
     </div>

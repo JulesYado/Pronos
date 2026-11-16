@@ -3,11 +3,13 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { PLAYER_COLORS, useGame } from '../store/useGameStore';
 import { TopBar } from '../components/TopBar';
 import { initials } from '../utils/format';
+import { useT } from '../i18n/useT';
 
 const MAX = 12;
 
 export function PlayersSetup() {
   const { draft, updateDraft, setScreen } = useGame();
+  const t = useT();
   const [name, setName] = useState('');
   const players = draft.players;
 
@@ -37,8 +39,8 @@ export function PlayersSetup() {
     <div className="screen screen--setup">
       <TopBar />
       <main className="setup">
-        <h2 className="step-title">2. Qui joue ?</h2>
-        <p className="lead">Ajoute les joueurs dans l'ordre de passage. Un seul animateur saisit les pronos de chacun.</p>
+        <h2 className="step-title">{t.whoPlays}</h2>
+        <p className="lead">{t.playersLead}</p>
         <form
           className="player-form"
           onSubmit={(e) => {
@@ -50,12 +52,12 @@ export function PlayersSetup() {
             className="input"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Nom du joueur"
+            placeholder={t.playerName}
             maxLength={20}
             autoFocus
           />
           <button className="btn btn--primary" type="submit" disabled={!name.trim() || players.length >= MAX}>
-            + Ajouter
+            {t.add}
           </button>
         </form>
         <ul className="player-list">
@@ -73,9 +75,9 @@ export function PlayersSetup() {
                 <span className="avatar avatar--lg">{initials(p.name) || '?'}</span>
                 <input className="player-chip__name" value={p.name} onChange={(e) => rename(p.id, e.target.value)} maxLength={20} />
                 <div className="player-chip__tools">
-                  <button type="button" onClick={() => move(i, -1)} disabled={i === 0} title="Monter">▲</button>
-                  <button type="button" onClick={() => move(i, 1)} disabled={i === players.length - 1} title="Descendre">▼</button>
-                  <button type="button" onClick={() => updateDraft({ players: players.filter((x) => x.id !== p.id) })} title="Retirer">
+                  <button type="button" onClick={() => move(i, -1)} disabled={i === 0} title={t.moveUp}>▲</button>
+                  <button type="button" onClick={() => move(i, 1)} disabled={i === players.length - 1} title={t.moveDown}>▼</button>
+                  <button type="button" onClick={() => updateDraft({ players: players.filter((x) => x.id !== p.id) })} title={t.remove}>
                     ✕
                   </button>
                 </div>
@@ -83,13 +85,13 @@ export function PlayersSetup() {
             ))}
           </AnimatePresence>
         </ul>
-        {players.length === 0 && <p className="muted center">Aucun joueur pour l'instant.</p>}
+        {players.length === 0 && <p className="muted center">{t.noPlayers}</p>}
         <div className="setup__nav">
           <button className="btn" onClick={() => setScreen('league')}>
-            ◀ Retour
+            {t.back}
           </button>
           <button className="btn btn--primary btn--big" disabled={!valid} onClick={() => setScreen('method')}>
-            Suivant ▶
+            {t.next}
           </button>
         </div>
       </main>

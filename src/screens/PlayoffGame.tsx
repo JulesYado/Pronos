@@ -12,7 +12,8 @@ import { TeamBadge } from '../components/TeamBadge';
 import { Bracket } from '../components/playoffs/Bracket';
 import { DuelCard } from '../components/playoffs/DuelCard';
 import { initials } from '../utils/format';
-import { roundLabel, scoreLabel } from '../utils/playoffs';
+import { roundLabel, roundName, scoreLabel } from '../utils/playoffs';
+import { useT } from '../i18n/useT';
 import type { Step } from '../engine/types';
 
 export function PlayoffGame() {
@@ -22,6 +23,7 @@ export function PlayoffGame() {
   const setScreen = useGame((s) => s.setScreen);
   const league = getLeague(config.leagueId);
   const map = teamMap(league);
+  const t = useT();
   const steps = getPlayoffSteps(config, league);
   const tpl = templateFor(config, league);
   const step: Step | null = steps[progress.cursor] ?? null;
@@ -50,7 +52,7 @@ export function PlayoffGame() {
     prev.current = { cursor: progress.cursor, round, playerId: step?.playerId };
     if (!p) {
       if (progress.cursor === 0 && step && player) {
-        setBanner({ id: Date.now(), kicker: 'Playoffs', title: config.turnMode === 'round' ? 'Que les playoffs commencent !' : `À toi, ${player.name} !`, color: player.color });
+        setBanner({ id: Date.now(), kicker: t.playoffs, title: config.turnMode === 'round' ? t.playoffsStart : t.yourTurn(player.name), color: player.color });
       }
       return;
     }
@@ -60,12 +62,12 @@ export function PlayoffGame() {
       return;
     }
     if (config.turnMode === 'sequential' && step.playerId !== p.playerId && player) {
-      setBanner({ id: Date.now(), kicker: 'Playoffs', title: `À toi, ${player.name} !`, color: player.color });
+      setBanner({ id: Date.now(), kicker: t.playoffs, title: t.yourTurn(player.name), color: player.color });
     } else if (round !== p.round) {
       if (p.round === 'f' || round === 'mvp') setConfetti((c) => c + 1);
-      const title = round === 'mvp' ? 'MVP des Finales ⭐' : `Place aux ${roundLabel(league, seriesById(config, league, step.groupId)!)}`;
-      const label = p.round === 'mvp' || !p.round ? '' : p.round === 'f' ? 'Finales' : roundLabel(league, tpl.find((s) => s.round === p.round)!);
-      setBanner({ id: Date.now(), kicker: label ? `${label} : terminé !` : 'Playoffs', title, color: round === 'mvp' ? 'var(--lemon)' : undefined });
+      const title = round === 'mvp' ? t.mvpBanner : t.nextRound(roundLabel(league, seriesById(config, league, step.groupId)!));
+      const label = p.round === 'mvp' || !p.round ? '' : roundName(league, p.round);
+      setBanner({ id: Date.now(), kicker: label ? t.roundDone(label) : t.playoffs, title, color: round === 'mvp' ? 'var(--lemon)' : undefined });
     }
   }, [progress.cursor]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -95,9 +97,9 @@ export function PlayoffGame() {
               )}
             </AnimatePresence>
             <div className="turn__info">
-              <strong>{!step ? 'Pronos terminés !' : isMvp ? 'MVP des Finales' : roundLabel(league, def!)}</strong>
+              <strong>{!step ? t.picksDone : isMvp ? t.finalsMvp : roundLabel(league, def!)}</strong>
               <span>
-                Playoffs · {Math.min(mine, tpl.length)}/{tpl.length} séries
+                {t.seriesCount(Math.min(mine, tpl.length), tpl.length)}
               </span>
               <div className="progress">
                 <motion.div className="progress__bar" animate={{ width: `${pct}%` }} />
@@ -116,15 +118,15 @@ export function PlayoffGame() {
             ) : (
               <motion.div className="finished" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring' }}>
                 <span className="finished__emoji">🏆</span>
-                <h2>Tous les tableaux sont faits !</h2>
+                <h2>{t.allBracketsDone}</h2>
                 <button className="btn btn--primary btn--big" onClick={() => setScreen('reveal')}>
-                  Révéler les tableaux ✨
+                  {t.revealBrackets}
                 </button>
               </motion.div>
             )}
           </section>
           <section className="pgame__others card">
-            <h3 className="sb-title">Les pronos</h3>
+            <h3 className="sb-title">{t.thePicks}</h3>
             {config.players.map((p) => {
               const pk = playerPicks(config, league, progress, p.id);
               const cur = def ? pk[def.id] : undefined;
@@ -135,7 +137,7 @@ export function PlayoffGame() {
                   className={`other ${p.id === player?.id ? 'is-active' : ''} ${p.id === shownPlayer.id ? 'is-shown' : ''}`}
                   style={{ '--pc': p.color } as CSSProperties}
                   onClick={() => setViewId(p.id)}
-                  title="Voir son tableau"
+                  title={t.seeBracket}
                 >
                   <span className="avatar">{initials(p.name)}</span>
                   <span className="other__name">{p.name}</span>
@@ -149,7 +151,7 @@ export function PlayoffGame() {
                       <small className="muted">{Object.keys(pk).length}/{tpl.length}</small>
                     )}
                   </span>
-                  <span className="other__champ" title="Son champion">
+                  <span className="other__champ" title={t.theirChampion}>
                     🏆 {champ ? <TeamBadge team={map.get(champ)!} size="xs" /> : <small className="muted">?</small>}
                   </span>
                 </button>
@@ -160,11 +162,11 @@ export function PlayoffGame() {
         <section className="pgame__bracket card">
           <div className="pgame__bracket-head">
             <h3 className="sb-title">
-              Tableau de <span style={{ background: shownPlayer.color }} className="name-chip">{shownPlayer.name}</span>
+              {t.bracketOf} <span style={{ background: shownPlayer.color }} className="name-chip">{shownPlayer.name}</span>
             </h3>
             {shownPlayer.id !== player?.id && player && (
               <button className="btn btn--sm" onClick={() => setViewId(null)}>
-                ↩ Revenir à {player.name}
+                {t.backTo(player.name)}
               </button>
             )}
           </div>
@@ -180,6 +182,7 @@ export function PlayoffGame() {
 function MvpCard({ name, champ, onSubmit }: { name: string; champ: string | null; onSubmit: (n: string) => void }) {
   const config = useGame((s) => s.config)!;
   const team = champ ? teamMap(getLeague(config.leagueId)).get(champ) : null;
+  const t = useT();
   const [value, setValue] = useState('');
   return (
     <motion.form
@@ -191,23 +194,25 @@ function MvpCard({ name, champ, onSubmit }: { name: string; champ: string | null
         if (value.trim()) onSubmit(value);
       }}
     >
-      <span className="duel__round">MVP des Finales ⭐</span>
+      <span className="duel__round">{t.mvpBanner}</span>
       {team && (
         <div className="mvp__champ">
           <TeamBadge team={team} size="lg" />
           <span>
-            Champion selon {name} : <strong>{team.city} {team.name}</strong>
+            {t.championOf(name)} <strong>{team.city} {team.name}</strong>
           </span>
         </div>
       )}
       <label className="mvp__label">
         <span>
-          Qui sera le MVP des Finales selon <strong>{name}</strong> ?
+          {t.mvpQuestion[0]}
+          <strong>{name}</strong>
+          {t.mvpQuestion[1]}
         </span>
-        <input className="input" autoFocus value={value} maxLength={40} onChange={(e) => setValue(e.target.value)} placeholder="Nom du joueur" />
+        <input className="input" autoFocus value={value} maxLength={40} onChange={(e) => setValue(e.target.value)} placeholder={t.playerName} />
       </label>
       <button className="btn btn--primary" disabled={!value.trim()}>
-        Valider ⏎
+        {t.submit}
       </button>
     </motion.form>
   );
