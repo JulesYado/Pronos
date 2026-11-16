@@ -123,6 +123,7 @@ export const useGame = create<State>()(
             turnMode: draft.turnMode,
             positionStart: draft.positionStart,
             tiers: draft.tiers,
+            review: true,
             seed: Math.floor(Math.random() * 2 ** 31),
           };
           set({ config, progress: initProgress(config, league), history: [], screen: 'game' });

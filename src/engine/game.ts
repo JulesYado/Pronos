@@ -19,20 +19,31 @@ export function emptyBoard(config: GameConfig, size: number): Board {
 
 const stepCache = new WeakMap<GameConfig, Step[]>();
 
+/** Une tier list propose une étape d'ajustement (item = taille du groupe) avant de valider. */
+export const hasReview = (config: GameConfig) => config.method === 'tier' && !!config.review;
+
+export function isReviewStep(league: League, step: Step): boolean {
+  return step.item >= groupSize(league, step.groupId);
+}
+
 export function getSteps(config: GameConfig, league: League): Step[] {
   const cached = stepCache.get(config);
   if (cached) return cached;
   const steps: Step[] = [];
+  const review = hasReview(config);
   for (const g of league.groups) {
     const n = g.teamIds.length;
     if (config.turnMode === 'sequential') {
       config.players.forEach((p, playerIndex) => {
         for (let item = 0; item < n; item++) steps.push({ groupId: g.id, playerId: p.id, playerIndex, item });
+        if (review) steps.push({ groupId: g.id, playerId: p.id, playerIndex, item: n });
       });
     } else {
       for (let item = 0; item < n; item++) {
         config.players.forEach((p, playerIndex) => steps.push({ groupId: g.id, playerId: p.id, playerIndex, item }));
       }
+      // Ajustements : chaque joueur à son tour, une fois toutes les équipes classées.
+      if (review) config.players.forEach((p, playerIndex) => steps.push({ groupId: g.id, playerId: p.id, playerIndex, item: n }));
     }
   }
   stepCache.set(config, steps);
@@ -74,12 +85,13 @@ export function pickKey(config: GameConfig, step: Step): string {
     : `${step.playerId}:${step.groupId}:${step.item}`;
 }
 
-export function needsPick(config: GameConfig, progress: GameProgress, step: Step): boolean {
+export function needsPick(config: GameConfig, progress: GameProgress, step: Step, league?: League): boolean {
+  if (league && isReviewStep(league, step)) return false;
   return config.method !== 'position' && config.order === 'pick' && !progress.picks[pickKey(config, step)];
 }
 
 export function currentTeam(config: GameConfig, league: League, progress: GameProgress, step: Step): string | null {
-  if (config.method === 'position') return null;
+  if (config.method === 'position' || isReviewStep(league, step)) return null;
   if (config.order === 'pick') return progress.picks[pickKey(config, step)] ?? null;
   return buildQueue(config, league, step.groupId, step.playerIndex)[step.item] ?? null;
 }
@@ -151,6 +163,7 @@ function autoResolve(config: GameConfig, league: League, progress: GameProgress)
     if (!step) return p;
     const key = boardKey(step.playerId, step.groupId);
     const board = p.boards[key];
+    if (isReviewStep(league, step)) return p;
     const rem = remainingTeams(config, league, board, step.groupId);
     if (needsPick(config, p, step) && rem.length === 1) {
       p = { ...p, picks: { ...p.picks, [pickKey(config, step)]: rem[0] } };
@@ -182,6 +195,10 @@ export function applyAction(config: GameConfig, league: League, progress: GamePr
   const key = boardKey(step.playerId, step.groupId);
   const board = progress.boards[key];
   const rem = remainingTeams(config, league, board, step.groupId);
+
+  if (isReviewStep(league, step)) {
+    return action.type === 'confirm' ? { ...progress, cursor: progress.cursor + 1 } : null;
+  }
 
   if (action.type === 'pick') {
     if (!needsPick(config, progress, step) || !rem.includes(action.teamId)) return null;

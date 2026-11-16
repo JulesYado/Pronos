@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { nba } from '../leagues/nba';
 import { consensus } from './consensus';
 import {
-  applyAction, boardKey, buildQueue, currentStep, currentTeam, getSteps, initProgress, isDone, playerRanking, remainingTeams,
+  applyAction, boardKey, buildQueue, currentStep, currentTeam, getSteps, initProgress, isDone, isReviewStep, needsPick, playerRanking, remainingTeams,
+  setBoardTiers,
 } from './game';
 import { defaultTiers } from './tiers';
 import type { GameConfig, GameProgress } from './types';
@@ -87,6 +88,47 @@ describe('méthode tier', () => {
     p = must(applyAction(c, nba, p, { type: 'tier', tierId: c.tiers[4].id })); // ATL loterie
     p = must(applyAction(c, nba, p, { type: 'tier', tierId: c.tiers[0].id })); // BOS favori
     expect(playerRanking(c, nba, p, 'a', 'east').slice(0, 3)).toEqual(['BOS', 'ATL', null]);
+  });
+});
+
+describe('tier list : ajustements avant validation', () => {
+  it('joueur par joueur : une étape d’ajustement après les 15 équipes de chaque joueur', () => {
+    const c = cfg({ method: 'tier', review: true });
+    const s = getSteps(c, nba);
+    expect(s).toHaveLength(64);
+    expect(s[15]).toMatchObject({ playerId: 'a', groupId: 'east', item: 15 });
+    expect(isReviewStep(nba, s[15])).toBe(true);
+    expect(s[16]).toMatchObject({ playerId: 'b', item: 0 });
+  });
+
+  it('tour par tour : les ajustements de chaque joueur viennent après toutes les équipes', () => {
+    const c = cfg({ method: 'tier', review: true, turnMode: 'round', order: 'pick' });
+    const s = getSteps(c, nba);
+    expect(s.slice(30, 32).map((x) => [x.playerId, x.item])).toEqual([['a', 15], ['b', 15]]);
+    expect(needsPick(c, initProgress(c, nba), s[30], nba)).toBe(false);
+  });
+
+  it('on peut déplacer les équipes puis valider ; rien d’autre n’est accepté', () => {
+    const c = cfg({ method: 'tier', review: true, players: [players[0]] });
+    let p = initProgress(c, nba);
+    for (let i = 0; i < 15; i++) p = must(applyAction(c, nba, p, { type: 'tier', tierId: c.tiers[i % 5].id }));
+    const step = currentStep(c, nba, p)!;
+    expect(isReviewStep(nba, step)).toBe(true);
+    expect(currentTeam(c, nba, p, step)).toBeNull();
+    expect(applyAction(c, nba, p, { type: 'tier', tierId: c.tiers[0].id })).toBeNull();
+    // Ajustement : ATL passe du tier 1 au tier 5.
+    const key = boardKey('a', 'east');
+    const tiers = { ...p.boards[key].tiers };
+    tiers[c.tiers[0].id] = tiers[c.tiers[0].id].filter((x) => x !== 'ATL');
+    tiers[c.tiers[4].id] = [...tiers[c.tiers[4].id], 'ATL'];
+    p = setBoardTiers(p, key, tiers);
+    expect(playerRanking(c, nba, p, 'a', 'east')[14]).toBe('ATL');
+    p = must(applyAction(c, nba, p, { type: 'confirm' }));
+    expect(currentStep(c, nba, p)).toMatchObject({ groupId: 'west', item: 0 });
+  });
+
+  it('anciennes parties (sans review) : pas d’étape d’ajustement', () => {
+    expect(getSteps(cfg({ method: 'tier' }), nba)).toHaveLength(60);
   });
 });
 

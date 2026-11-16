@@ -43,6 +43,8 @@ export interface GameConfig {
   positionStart: PositionStart;
   tiers: Tier[];
   seed: number;
+  /** Tier list : étape d'ajustement par joueur avant de valider (absent sur les anciennes parties). */
+  review?: boolean;
 }
 
 /** Pronostic d'un joueur pour un groupe (une conférence). */
@@ -80,4 +82,5 @@ export type Action =
   | { type: 'position'; teamId: string }
   | { type: 'team'; slot: number }
   | { type: 'series'; winner: string; lost?: number }
-  | { type: 'mvp'; name: string };
+  | { type: 'mvp'; name: string }
+  | { type: 'confirm' };

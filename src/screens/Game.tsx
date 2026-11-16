@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { getLeague, groupLabel } from '../leagues';
-import { boardKey, currentStep, currentTeam, getSteps, groupSize, needsPick, remainingTeams } from '../engine/game';
+import { boardKey, currentStep, currentTeam, getSteps, groupSize, isReviewStep, needsPick, remainingTeams } from '../engine/game';
 import { useGame } from '../store/useGameStore';
 import { TopBar } from '../components/TopBar';
 import { Scoreboard } from '../components/Scoreboard';
@@ -30,12 +30,13 @@ export function Game() {
 
   const [banner, setBanner] = useState<BannerData | null>(null);
   const [confetti, setConfetti] = useState(0);
-  const prev = useRef<{ cursor: number; groupId?: string; playerId?: string } | null>(null);
+  const prev = useRef<{ cursor: number; groupId?: string; playerId?: string; review?: boolean } | null>(null);
 
   // Bandeaux de transition : nouveau joueur, nouvelle conférence, fin de partie.
   useEffect(() => {
     const p = prev.current;
-    prev.current = { cursor: progress.cursor, groupId: step?.groupId, playerId: step?.playerId };
+    const review = !!step && isReviewStep(league, step);
+    prev.current = { cursor: progress.cursor, groupId: step?.groupId, playerId: step?.playerId, review };
     const forward = !p || progress.cursor > p.cursor;
     const player = step ? config.players[step.playerIndex] : null;
     if (!p) {
@@ -52,6 +53,15 @@ export function Game() {
     if (step.groupId !== p.groupId) {
       setConfetti((c) => c + 1);
       setBanner({ id: Date.now(), kicker: t.groupDone(groupLabel(league, p.groupId!)), title: t.nextGroup(groupLabel(league, step.groupId)), sub: config.turnMode === 'sequential' ? t.starts(player!.name) : undefined });
+    } else if (review && player && (!p.review || step.playerId !== p.playerId)) {
+      // Étape d'ajustement de la tier list.
+      setBanner({
+        id: Date.now(),
+        kicker: groupLabel(league, step.groupId),
+        title: config.turnMode === 'round' && config.players.length > 1 ? t.yourTurn(player.name) : t.adjustTitle,
+        sub: t.adjustSub,
+        color: player.color,
+      });
     } else if (config.turnMode === 'sequential' && step.playerId !== p.playerId && player) {
       setBanner({ id: Date.now(), kicker: groupLabel(league, step.groupId), title: t.yourTurn(player.name), color: player.color });
     }
@@ -61,7 +71,7 @@ export function Game() {
   const player = step ? config.players[step.playerIndex] : null;
   const board = step ? progress.boards[boardKey(step.playerId, step.groupId)] : null;
   const team = step ? currentTeam(config, league, progress, step) : null;
-  const picking = !!step && needsPick(config, progress, step);
+  const picking = !!step && needsPick(config, progress, step, league);
   const remaining = step && board ? remainingTeams(config, league, board, step.groupId) : [];
   const showPicker = !done && config.order === 'pick' && config.method !== 'position';
   const groupId = step?.groupId ?? league.groups[league.groups.length - 1].id;

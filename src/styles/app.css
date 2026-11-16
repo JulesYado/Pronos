@@ -1163,6 +1163,27 @@ kbd {
   gap: 0.4rem;
 }
 
+.review {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 1rem;
+  background: color-mix(in srgb, var(--sel) 45%, var(--surface));
+}
+
+.review__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.review__title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.4rem;
+}
+
 .tiers {
   flex: 1;
   min-height: 0;
@@ -1177,9 +1198,20 @@ kbd {
   display: flex;
   border: var(--bw) solid var(--line);
   border-radius: 0.8rem;
-  overflow: hidden;
+  /* visible : une équipe glissée doit pouvoir sortir de son tier. */
+  overflow: visible;
   background: var(--surface-2);
   transition: box-shadow 0.15s;
+}
+
+.tier.has-drag {
+  position: relative;
+  z-index: 5;
+}
+
+.tier.is-drop {
+  outline: 0.3rem dashed var(--sel);
+  outline-offset: 0.1rem;
 }
 
 .tier.is-target {
@@ -1201,6 +1233,7 @@ kbd {
   background: var(--tier);
   color: var(--on-pastel);
   border-right: var(--bw) solid var(--line);
+  border-radius: calc(0.8rem - var(--bw)) 0 0 calc(0.8rem - var(--bw));
 }
 
 .tier__key {
@@ -1230,9 +1263,30 @@ kbd {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  flex-wrap: wrap;
+  align-content: center;
   padding: 0.3rem 0.6rem;
-  overflow-x: auto;
+  border-radius: 0 calc(0.8rem - var(--bw)) calc(0.8rem - var(--bw)) 0;
   background: linear-gradient(90deg, color-mix(in srgb, var(--tier) 30%, transparent), transparent 70%);
+}
+
+.tier__team {
+  touch-action: none;
+}
+
+.tier__team.is-dragging {
+  position: relative;
+  z-index: 20;
+  cursor: grabbing;
+}
+
+.tier__marker {
+  flex: none;
+  width: 0.35rem;
+  height: 2.6rem;
+  border-radius: 99rem;
+  background: var(--ink);
+  box-shadow: 0 0 0 0.15rem var(--sel);
 }
 
 .tier__team {
