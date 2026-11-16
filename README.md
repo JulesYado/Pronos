@@ -2,6 +2,8 @@
 
 Outil web pour pronostiquer le classement d'une saison à plusieurs, pensé pour le partage d'écran / stream. V1 : NBA (Conférence Est puis Ouest). Interface en français ou en anglais (bouton FR/EN en haut à droite, touche L) ; les textes sont dans `src/i18n/dict.ts`.
 
+**En ligne : https://julesyado.github.io/Pronos/** (déployé automatiquement à chaque push sur `main`).
+
 ## Lancer
 
 ```bash
