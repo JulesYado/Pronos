@@ -19,6 +19,13 @@ export function RelativeBoard({ league, board, team }: BoardProps) {
 
   const insert = (i: number) => team && act({ type: 'relative', index: i });
 
+  // Premier choix : aucune équipe classée, donc aucune décision à prendre → validation automatique.
+  useEffect(() => {
+    if (!team || list.length > 0) return;
+    const id = setTimeout(() => act({ type: 'relative', index: 0 }), 450);
+    return () => clearTimeout(id);
+  }, [team, list.length, act]);
+
   useKeys((e) => {
     if (!team) return;
     if (e.key === 'ArrowUp') {
