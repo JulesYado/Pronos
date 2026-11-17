@@ -22,8 +22,27 @@ const stepCache = new WeakMap<GameConfig, Step[]>();
 /** Une tier list propose une étape d'ajustement (item = taille du groupe) avant de valider. */
 export const hasReview = (config: GameConfig) => config.method === 'tier' && !!config.review;
 
+/** Étape de pause sans équipe à placer : ajustements (tier list) ou récap (mode Airball). */
 export function isReviewStep(league: League, step: Step): boolean {
   return step.item >= groupSize(league, step.groupId);
+}
+
+export const isAirball = (config: GameConfig) => config.method === 'position' && !!config.airball;
+
+export type AirballSectionId = 'nullos' | 'middle' | 'balezes';
+
+/** Parties du mode Airball, du bas vers le haut : places (index 0-based, bornes incluses). */
+export function airballSections(size: number): { id: AirballSectionId; from: number; to: number }[] {
+  const k = Math.ceil(size / 3);
+  return [
+    { id: 'nullos', from: size - k, to: size - 1 },
+    { id: 'middle', from: Math.max(0, size - 2 * k), to: size - k - 1 },
+    { id: 'balezes', from: 0, to: Math.max(0, size - 2 * k) - 1 },
+  ];
+}
+
+export function airballSectionOf(size: number, slot: number): number {
+  return airballSections(size).findIndex((s) => slot >= s.from && slot <= s.to);
 }
 
 export function getSteps(config: GameConfig, league: League): Step[] {
@@ -33,6 +52,16 @@ export function getSteps(config: GameConfig, league: League): Step[] {
   const review = hasReview(config);
   for (const g of league.groups) {
     const n = g.teamIds.length;
+    if (isAirball(config)) {
+      // Tour par tour en partant du bas, avec un récap à la fin de chaque partie.
+      const ends = airballSections(n).map((s) => n - 1 - s.from);
+      for (let item = 0; item < n; item++) {
+        config.players.forEach((p, playerIndex) => steps.push({ groupId: g.id, playerId: p.id, playerIndex, item }));
+        const section = ends.indexOf(item);
+        if (section >= 0) steps.push({ groupId: g.id, playerId: config.players[0].id, playerIndex: 0, item: n, recap: section });
+      }
+      continue;
+    }
     if (config.turnMode === 'sequential') {
       config.players.forEach((p, playerIndex) => {
         for (let item = 0; item < n; item++) steps.push({ groupId: g.id, playerId: p.id, playerIndex, item });

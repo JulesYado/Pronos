@@ -70,6 +70,10 @@ function toHex(color: string): string {
 export function MethodSetup() {
   const { draft, updateDraft, setScreen, startGame, config } = useGame();
   const usesOrder = draft.method !== 'position';
+  // Mode Airball : impose tour par tour + départ par le bas.
+  const airball = draft.method === 'position' && !!draft.airball;
+  const turnMode = airball ? 'round' : draft.turnMode;
+  const positionStart = airball ? 'bottom' : draft.positionStart;
   const t = useT();
 
   const start = () => {
@@ -105,14 +109,39 @@ export function MethodSetup() {
         </div>
 
         <div className="options">
-          <section className="option card">
+          {draft.method === 'position' && (
+            <motion.section className={`option option--full card airball-option ${airball ? 'is-on' : ''}`} initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+              <div className="airball-option__text">
+                <h3>{t.airballTitle}</h3>
+                <p>{t.airballDesc}</p>
+                <div className="airball-option__parts">
+                  {(['balezes', 'middle', 'nullos'] as const).map((id, i) => (
+                    <span key={id} className={`airball-chip airball-chip--${id}`}>
+                      {t.airballSections[id]} <small>{t.placesRange(i * 5 + 1, i * 5 + 5)}</small>
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="seg seg--vertical">
+                <button className={airball ? 'is-on' : ''} onClick={() => updateDraft({ airball: true })}>
+                  {t.airballOn[0]}
+                  <small>{t.airballOn[1]}</small>
+                </button>
+                <button className={!airball ? 'is-on' : ''} onClick={() => updateDraft({ airball: false })}>
+                  {t.airballOff[0]}
+                  <small>{t.airballOff[1]}</small>
+                </button>
+              </div>
+            </motion.section>
+          )}
+          <section className={`option card ${airball ? 'is-locked' : ''}`}>
             <h3>{t.turnOrderTitle}</h3>
             <div className="seg">
-              <button className={draft.turnMode === 'sequential' ? 'is-on' : ''} onClick={() => updateDraft({ turnMode: 'sequential' })}>
+              <button className={turnMode === 'sequential' ? 'is-on' : ''} disabled={airball} onClick={() => updateDraft({ turnMode: 'sequential' })}>
                 {t.sequential}
                 <small>{t.sequentialDesc}</small>
               </button>
-              <button className={draft.turnMode === 'round' ? 'is-on' : ''} onClick={() => updateDraft({ turnMode: 'round' })}>
+              <button className={turnMode === 'round' ? 'is-on' : ''} disabled={airball} onClick={() => updateDraft({ turnMode: 'round' })}>
                 {t.round}
                 <small>{t.roundDesc}</small>
               </button>
@@ -132,14 +161,14 @@ export function MethodSetup() {
               </div>
             </section>
           ) : (
-            <section className="option card">
+            <section className={`option card ${airball ? 'is-locked' : ''}`}>
               <h3>{t.startWith}</h3>
               <div className="seg">
-                <button className={draft.positionStart === 'top' ? 'is-on' : ''} onClick={() => updateDraft({ positionStart: 'top' })}>
+                <button className={positionStart === 'top' ? 'is-on' : ''} disabled={airball} onClick={() => updateDraft({ positionStart: 'top' })}>
                   {t.top}
                   <small>{t.topDesc}</small>
                 </button>
-                <button className={draft.positionStart === 'bottom' ? 'is-on' : ''} onClick={() => updateDraft({ positionStart: 'bottom' })}>
+                <button className={positionStart === 'bottom' ? 'is-on' : ''} disabled={airball} onClick={() => updateDraft({ positionStart: 'bottom' })}>
                   {t.bottom}
                   <small>{t.bottomDesc}</small>
                 </button>

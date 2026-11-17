@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { nba } from '../leagues/nba';
 import { consensus } from './consensus';
 import {
-  applyAction, boardKey, buildQueue, currentStep, currentTeam, getSteps, initProgress, isDone, isReviewStep, needsPick, playerRanking, remainingTeams,
+  airballSections, applyAction, boardKey, buildQueue, currentStep, currentTeam, getSteps, initProgress, isDone, isReviewStep, needsPick, playerRanking, remainingTeams,
   setBoardTiers,
 } from './game';
 import { defaultTiers } from './tiers';
@@ -129,6 +129,44 @@ describe('tier list : ajustements avant validation', () => {
 
   it('anciennes parties (sans review) : pas d’étape d’ajustement', () => {
     expect(getSteps(cfg({ method: 'tier' }), nba)).toHaveLength(60);
+  });
+});
+
+describe('mode Airball (par position)', () => {
+  const c = cfg({ method: 'position', airball: true, turnMode: 'round', positionStart: 'bottom' });
+
+  it('trois parties de 5 places : nullos (11-15), middle (6-10), balèzes (1-5)', () => {
+    expect(airballSections(15)).toEqual([
+      { id: 'nullos', from: 10, to: 14 },
+      { id: 'middle', from: 5, to: 9 },
+      { id: 'balezes', from: 0, to: 4 },
+    ]);
+  });
+
+  it('tour par tour, un récap après chaque partie', () => {
+    const s = getSteps(c, nba);
+    // 15 places × 2 joueurs + 3 récaps, par conférence.
+    expect(s).toHaveLength(2 * (30 + 3));
+    expect(s.slice(0, 2).map((x) => x.playerId)).toEqual(['a', 'b']);
+    expect(s[10]).toMatchObject({ recap: 0, groupId: 'east' });
+    expect(s[21]).toMatchObject({ recap: 1 });
+    expect(s[32]).toMatchObject({ recap: 2 });
+    expect(s[33]).toMatchObject({ groupId: 'west', item: 0 });
+  });
+
+  it('le récap ne se valide qu’avec « confirm », puis on continue à la 10e place', () => {
+    let p = initProgress(c, nba);
+    for (let i = 0; i < 10; i++) {
+      const st = currentStep(c, nba, p)!;
+      const board = p.boards[boardKey(st.playerId, 'east')];
+      p = must(applyAction(c, nba, p, { type: 'position', teamId: remainingTeams(c, nba, board, 'east')[0] }));
+    }
+    const recap = currentStep(c, nba, p)!;
+    expect(recap.recap).toBe(0);
+    expect(playerRanking(c, nba, p, 'a', 'east').slice(10).every(Boolean)).toBe(true);
+    expect(applyAction(c, nba, p, { type: 'position', teamId: 'WAS' })).toBeNull();
+    p = must(applyAction(c, nba, p, { type: 'confirm' }));
+    expect(currentStep(c, nba, p)).toMatchObject({ item: 5, playerId: 'a' });
   });
 });
 

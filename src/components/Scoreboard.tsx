@@ -14,10 +14,12 @@ interface Props {
   progress: GameProgress;
   activePlayerId: string | null;
   groupId: string;
+  /** Mode Airball : parties du classement (séparateurs). */
+  sections?: { id: string; from: number; to: number }[];
 }
 
 /** Classements en cours de tous les joueurs, toujours visibles. */
-export function Scoreboard({ config, league, progress, activePlayerId, groupId }: Props) {
+export function Scoreboard({ config, league, progress, activePlayerId, groupId, sections }: Props) {
   const [view, setView] = useState(groupId);
   useEffect(() => setView(groupId), [groupId]);
   const map = teamMap(league);
@@ -25,6 +27,11 @@ export function Scoreboard({ config, league, progress, activePlayerId, groupId }
   const size = group.teamIds.length;
   const many = config.players.length > 3;
   const t = useT();
+  // Séparateur au début de chaque partie (mode Airball) + teinte de la partie.
+  const sectionClass = (i: number) => {
+    const s = sections?.find((x) => i >= x.from && i <= x.to);
+    return s ? `sb-sec sb-sec--${s.id} ${i === s.from && i > 0 ? 'sb-sec--start' : ''}` : '';
+  };
 
   return (
     <aside className="scoreboard card">
@@ -42,7 +49,7 @@ export function Scoreboard({ config, league, progress, activePlayerId, groupId }
         <div className="scoreboard__ranks">
           <div className="sb-head" />
           {Array.from({ length: size }, (_, i) => (
-            <div key={i} className="sb-rank">
+            <div key={i} className={`sb-rank ${sectionClass(i)}`}>
               {i + 1}
             </div>
           ))}
@@ -74,7 +81,7 @@ export function Scoreboard({ config, league, progress, activePlayerId, groupId }
                 {ranking.map((id, i) => {
                   const team = id ? map.get(id) : null;
                   return (
-                    <div key={i} className="sb-cell" style={id && tierColor.get(id) ? ({ '--tc': tierColor.get(id) } as CSSProperties) : undefined}>
+                    <div key={i} className={`sb-cell ${sectionClass(i)}`} style={id && tierColor.get(id) ? ({ '--tc': tierColor.get(id) } as CSSProperties) : undefined}>
                       {team && (
                         <motion.div
                           key={team.id}

@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } fr
 import { AnimatePresence, motion, Reorder } from 'framer-motion';
 import { getLeague, groupLabel, teamMap } from '../leagues';
 import { useT } from '../i18n/useT';
-import { boardKey, playerRanking } from '../engine/game';
+import { airballSections, boardKey, isAirball, playerRanking } from '../engine/game';
 import { consensus } from '../engine/consensus';
 import { exportGame, useGame } from '../store/useGameStore';
 import { TopBar } from '../components/TopBar';
@@ -171,8 +171,10 @@ export function Reveal() {
   function renderRow(row: number) {
     const visible = isShown(row);
     const zone = league.zones ? (row < league.zones.playoff ? 'is-po' : row < league.zones.playin ? 'is-pi' : '') : '';
+    const part = isAirball(config) ? airballSections(size).find((s) => s.from === row) : undefined;
     return (
       <Fragment key={row}>
+        {part && <div className={`rv-section rv-section--${part.id}`}>🏀 {t.airballSections[part.id]}</div>}
         <div className={`rv-rank ${zone}`}>{row + 1}</div>
         {rankings.map((r, j) => {
           const id = r[row];

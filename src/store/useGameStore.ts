@@ -18,6 +18,8 @@ export interface Draft {
   turnMode: TurnMode;
   positionStart: PositionStart;
   tiers: Tier[];
+  /** Méthode par position : mode Airball (absent sur les anciens brouillons = désactivé). */
+  airball?: boolean;
   /** Playoffs : têtes de série saisies par conférence, options. */
   seeds: Record<string, string[]>;
   playIn: boolean;
@@ -104,6 +106,7 @@ export const useGame = create<State>()(
           const { draft, leagueId } = get();
           const league = getLeague(leagueId);
           const n = seedCount(draft.playIn);
+          const airball = draft.mode !== 'playoffs' && draft.method === 'position' && !!draft.airball;
           const config: GameConfig = {
             mode: draft.mode,
             ...(draft.mode === 'playoffs'
@@ -120,8 +123,10 @@ export const useGame = create<State>()(
             players: draft.players,
             method: draft.method,
             order: draft.order,
-            turnMode: draft.turnMode,
-            positionStart: draft.positionStart,
+            // Le mode Airball impose le tour par tour en partant du bas.
+            turnMode: airball ? 'round' : draft.turnMode,
+            positionStart: airball ? 'bottom' : draft.positionStart,
+            airball,
             tiers: draft.tiers,
             review: true,
             seed: Math.floor(Math.random() * 2 ** 31),

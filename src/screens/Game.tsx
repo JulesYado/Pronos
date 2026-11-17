@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { getLeague, groupLabel } from '../leagues';
-import { boardKey, currentStep, currentTeam, getSteps, groupSize, isReviewStep, needsPick, remainingTeams } from '../engine/game';
+import { airballSectionOf, airballSections, boardKey, currentStep, currentTeam, getSteps, groupSize, isAirball, isReviewStep, needsPick, remainingTeams, targetSlot } from '../engine/game';
+import { AirballRecap } from '../components/methods/AirballRecap';
 import { useGame } from '../store/useGameStore';
 import { TopBar } from '../components/TopBar';
 import { Scoreboard } from '../components/Scoreboard';
@@ -30,17 +31,31 @@ export function Game() {
 
   const [banner, setBanner] = useState<BannerData | null>(null);
   const [confetti, setConfetti] = useState(0);
-  const prev = useRef<{ cursor: number; groupId?: string; playerId?: string; review?: boolean } | null>(null);
+  const prev = useRef<{ cursor: number; groupId?: string; playerId?: string; review?: boolean; section?: number } | null>(null);
+  const airball = isAirball(config);
+  /** Mode Airball : partie (0 nullos, 1 middle, 2 balèzes) de l'étape, hors récap. */
+  const sectionOf = (s: typeof step): number | undefined => {
+    if (!airball || !s || s.recap !== undefined) return undefined;
+    const n = groupSize(league, s.groupId);
+    return airballSectionOf(n, targetSlot(config, n, s.item));
+  };
+  const sectionBanner = (s: NonNullable<typeof step>, sec: number, kicker?: string): BannerData => {
+    const part = airballSections(groupSize(league, s.groupId))[sec];
+    return { id: Date.now(), kicker: kicker ?? groupLabel(league, s.groupId), title: t.airballSections[part.id], sub: t.sectionStart(part.from + 1, part.to + 1), color: 'var(--peach)' };
+  };
 
   // Bandeaux de transition : nouveau joueur, nouvelle conférence, fin de partie.
   useEffect(() => {
     const p = prev.current;
     const review = !!step && isReviewStep(league, step);
-    prev.current = { cursor: progress.cursor, groupId: step?.groupId, playerId: step?.playerId, review };
+    const section = sectionOf(step);
+    prev.current = { cursor: progress.cursor, groupId: step?.groupId, playerId: step?.playerId, review, section };
     const forward = !p || progress.cursor > p.cursor;
     const player = step ? config.players[step.playerIndex] : null;
     if (!p) {
-      if (progress.cursor === 0 && step && player) {
+      if (progress.cursor === 0 && step && airball && section !== undefined) {
+        setBanner(sectionBanner(step, section));
+      } else if (progress.cursor === 0 && step && player) {
         setBanner({ id: Date.now(), kicker: groupLabel(league, step.groupId), title: config.turnMode === 'round' ? t.letsGo : t.yourTurn(player.name), color: player.color });
       }
       return;
@@ -52,7 +67,11 @@ export function Game() {
     }
     if (step.groupId !== p.groupId) {
       setConfetti((c) => c + 1);
-      setBanner({ id: Date.now(), kicker: t.groupDone(groupLabel(league, p.groupId!)), title: t.nextGroup(groupLabel(league, step.groupId)), sub: config.turnMode === 'sequential' ? t.starts(player!.name) : undefined });
+      setBanner({ id: Date.now(), kicker: t.groupDone(groupLabel(league, p.groupId!)), title: t.nextGroup(groupLabel(league, step.groupId)), sub: section !== undefined ? t.airballSections[airballSections(groupSize(league, step.groupId))[section].id] : config.turnMode === 'sequential' ? t.starts(player!.name) : undefined });
+    } else if (airball) {
+      // Mode Airball : confettis au récap, bandeau au début de chaque partie.
+      if (step.recap !== undefined && !p.review) setConfetti((c) => c + 1);
+      else if (section !== undefined && section !== p.section) setBanner(sectionBanner(step, section));
     } else if (review && player && (!p.review || step.playerId !== p.playerId)) {
       // Étape d'ajustement de la tier list.
       setBanner({
@@ -68,7 +87,8 @@ export function Game() {
   }, [progress.cursor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const done = !step;
-  const player = step ? config.players[step.playerIndex] : null;
+  const recap = step?.recap !== undefined;
+  const player = step && !recap ? config.players[step.playerIndex] : null;
   const board = step ? progress.boards[boardKey(step.playerId, step.groupId)] : null;
   const team = step ? currentTeam(config, league, progress, step) : null;
   const picking = !!step && needsPick(config, progress, step, league);
@@ -107,7 +127,8 @@ export function Game() {
             <div className="turn__info">
               <strong>{done ? t.picksDone : groupLabel(league, groupId)}</strong>
               <span>
-                {methodLabel(config.method)} · {done ? `${size}/${size}` : `${placed}/${size}`}
+                {airball && step ? `${t.airballTitle} · ${t.airballSections[airballSections(size)[step.recap ?? sectionOf(step) ?? 0].id]}` : methodLabel(config.method)} ·{' '}
+                {done ? `${size}/${size}` : `${placed}/${size}`}
               </span>
               <div className="progress">
                 <motion.div className="progress__bar" animate={{ width: `${pct}%` }} />
@@ -120,7 +141,7 @@ export function Game() {
         {showPicker && <TeamPicker league={league} teams={remaining} active={picking} selected={team} onPick={(id) => act({ type: 'pick', teamId: id })} />}
         <section className="game__board card">
           {boardProps ? (
-            <Board key={config.method} {...boardProps} />
+            recap ? <AirballRecap key={`recap-${progress.cursor}`} {...boardProps} /> : <Board key={config.method} {...boardProps} />
           ) : (
             <motion.div className="finished" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring' }}>
               <span className="finished__emoji">🏆</span>
@@ -132,7 +153,7 @@ export function Game() {
             </motion.div>
           )}
         </section>
-        <Scoreboard config={config} league={league} progress={progress} activePlayerId={player?.id ?? null} groupId={groupId} />
+        <Scoreboard config={config} league={league} progress={progress} activePlayerId={player?.id ?? null} groupId={groupId} sections={airball ? airballSections(size) : undefined} />
       </main>
 
       <Banner banner={banner} onClose={() => setBanner(null)} />

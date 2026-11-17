@@ -45,6 +45,8 @@ export interface GameConfig {
   seed: number;
   /** Tier list : étape d'ajustement par joueur avant de valider (absent sur les anciennes parties). */
   review?: boolean;
+  /** Méthode par position : « Mode Airball » (5 par 5, tour par tour, par le bas, récap entre chaque partie). */
+  airball?: boolean;
 }
 
 /** Pronostic d'un joueur pour un groupe (une conférence). */
@@ -73,6 +75,8 @@ export interface Step {
   playerId: string;
   playerIndex: number;
   item: number;
+  /** Mode Airball : étape de récap de la partie n° `recap` (0 = nullos, 1 = middle, 2 = balèzes). */
+  recap?: number;
 }
 
 export type Action =
